@@ -1,5 +1,4 @@
-// components/VideoPlayer.tsx
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import Hls from "hls.js";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
@@ -9,6 +8,7 @@ import {
   defaultLayoutIcons,
   DefaultVideoLayout,
 } from "@vidstack/react/player/layouts/default";
+import { Button } from "./ui/button";
 
 export function VideoPlayer({
   src,
@@ -18,6 +18,19 @@ export function VideoPlayer({
   title: string | undefined;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [hasSubtitle, setHasSubtitle] = useState(false);
+
+  useEffect(() => {
+    if (!title) return;
+
+    fetch(`/api/subtitle/${title}`, { method: "HEAD" })
+      .then((res) => {
+        setHasSubtitle(res.ok);
+      })
+      .catch(() => {
+        setHasSubtitle(false);
+      });
+  }, [title]);
 
   useEffect(() => {
     if (Hls.isSupported() && videoRef.current) {
@@ -40,26 +53,24 @@ export function VideoPlayer({
         className="aspect-video w-full rounded-lg overflow-hidden border border-gray-300 dark:border-zinc-700 shadow-md dark:shadow-lg bg-white dark:bg-zinc-800"
       >
         <MediaProvider>
-          <track
-            kind="subtitles"
-            src={`/api/subtitle/${title}`}
-            srcLang="en"
-            label="English"
-            default
-          />
+          {hasSubtitle && (
+            <track
+              kind="subtitles"
+              src={`/api/subtitle/${title}`}
+              srcLang="en"
+              label="English"
+              default
+            />
+          )}
         </MediaProvider>
         <DefaultVideoLayout icons={defaultLayoutIcons} />
       </MediaPlayer>
 
-      <div className="mt-6 text-center">
-        <a
-          href={src}
-          download
-          className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white text-sm font-medium rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-300"
-        >
+      <Button variant={"default"} className="mt-4">
+        <a href={src} download>
           Download
         </a>
-      </div>
+      </Button>
     </div>
   );
 }
