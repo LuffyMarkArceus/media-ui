@@ -47,15 +47,19 @@ export default function Home() {
               />
             </Link>
 
-            <div className="p-2">
-              <div className="font-semibold text-sm truncate">{video.name}</div>
+            <div className="p-2" title={video.name}>
+              <div className=" font-semibold text-sm truncate">
+                {video.name.length < 32
+                  ? video.name
+                  : `${video.name.slice(0, 23)}...`}
+              </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {(video.size / 1024 / 1024).toFixed(2)} MB
               </div>
             </div>
 
             {/* Options Menu */}
-            <div className="absolute bottom-2 right-2">
+            <div className="absolute bottom-1 right-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
