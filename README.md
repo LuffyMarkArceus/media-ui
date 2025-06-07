@@ -9,7 +9,7 @@ A lightweight media server UI written in React with Typescript and a backend in 
 - [ ] Create DB Schema for media files
 - [ ] Set up DB and data model.
 - [ ] Move folder open state to URL.
-- [ ] Add Auth.
+- [x] Add Auth.
 - [ ] Add file uploading.
 - [x] Provide option to view and download video files.
 - [x] Make a video player UI to view the files.
