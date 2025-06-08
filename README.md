@@ -12,8 +12,11 @@ It allows you to view and download media files.
 - [ ] Move folder open state to URL.
 - [x] Add Auth.
 - [ ] Add file uploading.
-- [ ] Add FolderCards, to make navigation feel like Google Drive.
+- [x] Add Breadcrumbs
+- [x] Add FolderCards, to make navigation feel like Google Drive.
 - [x] Provide option to view and download video files.
 - [x] Make a video player UI to view the files.
 - [x] Add subtitle support
-- [ ] Add a search bar to search for media files.
+
+- [x] Add a search bar to search for media files & folders.
+- [ ] Add an option to sort the file view by name, size, created_at
