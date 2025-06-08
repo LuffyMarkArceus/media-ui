@@ -26,9 +26,10 @@ export default function VideoPage() {
       <div>
         <TopNav />
       </div>
+      <br></br>
 
       <Breadcrumbs items={breadcrumbItems} />
-
+      <br />
       <h3 className="text-center font-bold mt-4 text-base mb-4 text-gray-700 dark:text-gray-300 truncate">
         {fileName}
       </h3>

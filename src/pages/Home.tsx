@@ -239,7 +239,7 @@ export default function Home() {
         filteredVideos.length === 0 &&
         filteredFolders.length === 0 && (
           <div className="text-gray-500 mt-4">
-            No results found for "{searchTerm}" in this path.
+            No results found for "{searchTerm}" here.
           </div>
         )}
       {!searchTerm && allVideos.length === 0 && allFolders.length === 0 && (
