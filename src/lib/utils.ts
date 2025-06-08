@@ -26,5 +26,6 @@ export const formatDate = (dateString: string | Date) => {
 };
 
 export const formatFileName = (name: string) => {
-  return name.length < 32 ? name : `${name.slice(0, 23)}...`;
+  // return name.length < 40 ? name : `${name.slice(0, 23)}...`;
+  return name;
 };

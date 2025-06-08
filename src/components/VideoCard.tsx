@@ -32,7 +32,7 @@ export function VideoCard({ video }: { video: VideoMeta }) {
       </Link>
 
       <div className="p-2" title={video.name}>
-        <div className="font-semibold text-sm truncate">
+        <div className="font-semibold text-sm">
           {formatFileName(video.name)}
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400">

@@ -11,7 +11,7 @@ export default function SearchBar({
     <input
       type="text"
       placeholder="Search videos..."
-      className="w-full p-3 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-white dark:border-zinc-700 dark:placeholder-gray-400 transition-colors duration-200"
+      className="w-full p-3 rounded-4xl bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-white dark:border-zinc-700 dark:placeholder-gray-400 transition-colors duration-200"
       value={searchTerm}
       onChange={(e) => setSearchTerm(e.target.value)}
     />
