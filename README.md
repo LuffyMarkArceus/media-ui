@@ -1,6 +1,7 @@
 # 🎬 Media Server - React/TS
 
-A lightweight media server UI written in React with Typescript and a backend in Go using Gin. It allows you to view and download media files.
+A lightweight media server UI written in React with Typescript.
+It allows you to view and download media files.
 
 ### UI Tasks - React Frontend
 
@@ -11,6 +12,8 @@ A lightweight media server UI written in React with Typescript and a backend in 
 - [ ] Move folder open state to URL.
 - [x] Add Auth.
 - [ ] Add file uploading.
+- [ ] Add FolderCards, to make navigation feel like Google Drive.
 - [x] Provide option to view and download video files.
 - [x] Make a video player UI to view the files.
+- [x] Add subtitle support
 - [ ] Add a search bar to search for media files.

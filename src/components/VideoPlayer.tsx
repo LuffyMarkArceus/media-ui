@@ -13,24 +13,30 @@ import { Button } from "./ui/button";
 export function VideoPlayer({
   src,
   title,
+  subtitlePath,
 }: {
   src: string;
   title: string | undefined;
+  subtitlePath: string | undefined;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasSubtitle, setHasSubtitle] = useState(false);
 
-  useEffect(() => {
-    if (!title) return;
+  // console.log("VIDEOPLAYER SUBS PATH:", subtitlePath);
 
-    fetch(`/api/subtitle/${title}`, { method: "HEAD" })
+  useEffect(() => {
+    if (!subtitlePath) return;
+
+    fetch(`/api/subtitle/${encodeURIComponent(subtitlePath)}`, {
+      method: "GET",
+    })
       .then((res) => {
         setHasSubtitle(res.ok);
       })
       .catch(() => {
         setHasSubtitle(false);
       });
-  }, [title]);
+  }, [subtitlePath]);
 
   useEffect(() => {
     if (Hls.isSupported() && videoRef.current) {
@@ -48,15 +54,15 @@ export function VideoPlayer({
   return (
     <div className="relative w-full max-w-4xl mx-auto">
       <MediaPlayer
-        title={title}
+        // title={title}
         src={{ src: src, type: "video/mp4" }}
         className="aspect-video w-full rounded-lg overflow-hidden border border-gray-300 dark:border-zinc-700 shadow-md dark:shadow-lg bg-white dark:bg-zinc-800"
       >
         <MediaProvider>
-          {hasSubtitle && (
+          {hasSubtitle && subtitlePath && (
             <track
               kind="subtitles"
-              src={`/api/subtitle/${title}`}
+              src={`/api/subtitle/${encodeURIComponent(subtitlePath)}`}
               srcLang="en"
               label="English"
               default
@@ -67,7 +73,7 @@ export function VideoPlayer({
       </MediaPlayer>
 
       <Button variant={"default"} className="mt-4">
-        <a href={src} download>
+        <a href={src} download={title}>
           Download
         </a>
       </Button>

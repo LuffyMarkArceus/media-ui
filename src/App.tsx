@@ -26,7 +26,7 @@ export default function App() {
         }
       />
       <Route
-        path="/video/:slug"
+        path="/video"
         element={
           <>
             <SignedIn>
