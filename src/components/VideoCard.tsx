@@ -18,6 +18,33 @@ export interface VideoMeta {
 }
 
 export function VideoCard({ video }: { video: VideoMeta }) {
+  const handleDownload = async (event: React.MouseEvent) => {
+    event.stopPropagation(); // Stop propagation to prevent dropdown from closing immediately
+
+    try {
+      console.log(video.path);
+      const response = await fetch(
+        `/api/media_stream/?path=${encodeURIComponent(video.path)}`
+      );
+      if (response.status !== 200) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      document.body.appendChild(a);
+      a.href = url;
+      a.download = video.name; // Set the desired file name
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url); // Clean up the URL object
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      alert("Failed to download the file.");
+    }
+  };
+
   return (
     <div
       key={video.path}
@@ -48,20 +75,36 @@ export function VideoCard({ video }: { video: VideoMeta }) {
               variant="ghost"
               size="icon"
               className="text-gray-600 dark:text-gray-300 hover:bg-transparent"
+              onClick={(e) => e.stopPropagation()}
             >
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="bottom" align="end">
-            <DropdownMenuItem asChild>
-              <a href={`/api/media/${video.path}`} download>
-                Download
-              </a>
+          <DropdownMenuContent
+            side="bottom"
+            align="end"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenuItem
+              onClick={handleDownload}
+              title={`/media_stream/?path=${encodeURIComponent(video.path)}`}
+            >
+              Download
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => alert(`Rename: ${video.name}`)}>
+            <DropdownMenuItem
+              onClick={(event) => {
+                event.stopPropagation();
+                alert(`Rename: ${video.name}`);
+              }}
+            >
               Rename
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => alert(`Share: ${video.name}`)}>
+            <DropdownMenuItem
+              onClick={(event) => {
+                event.stopPropagation();
+                alert(`Share: ${video.name}`);
+              }}
+            >
               Share
             </DropdownMenuItem>
           </DropdownMenuContent>

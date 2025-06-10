@@ -1,17 +1,16 @@
-import { useEffect, useState, useMemo } from "react"; // Import useMemo
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+
+import { ArrowUp, ArrowDown } from "lucide-react";
+
 import { TopNav } from "../components/topnav";
 import { VideoCard } from "../components/VideoCard";
 import { FolderCard } from "../components/FolderCard";
 import { useSearchParams, useNavigate } from "react-router-dom";
-
-// Import the new components/hooks
 import { useBreadcrumbs } from "../hooks/useBreadcrumbs";
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import SearchBar from "../components/SearchBar"; // Make sure the path is correct
-
-// Import icons for sort direction
-import { ArrowUp, ArrowDown } from "lucide-react";
+import SearchBar from "../components/SearchBar";
+import { Button } from "../components/ui/button";
 
 interface FileItem {
   name: string;
@@ -25,22 +24,16 @@ type SortKey = "name" | "size" | "created_at";
 type SortDirection = "asc" | "desc";
 
 export default function Home() {
-  // Renamed to 'allVideos' and 'allFolders' to hold the unfiltered data
   const [allVideos, setAllVideos] = useState<FileItem[]>([]);
   const [allFolders, setAllFolders] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const currentPath = searchParams.get("path") || ""; // Default to empty string for root now.
-  // This will align better with breadcrumbs logic for root.
-
-  // Use the custom hook for breadcrumbs
+  const currentPath = searchParams.get("path") || "";
   const breadcrumbItems = useBreadcrumbs();
-
   const [searchTerm, setSearchTerm] = useState("");
-
-  const [sortKey, setSortKey] = useState<SortKey>("name"); // Default sort by name
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc"); // Default ascending
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     axios
@@ -50,43 +43,33 @@ export default function Home() {
       .then((res) => {
         setAllVideos(res.data.files || []);
         setAllFolders(res.data.folders || []);
-        setSearchTerm(""); // Reset search term when navigating to a new folder
+        setSearchTerm("");
       })
       .catch((error) => {
         console.error("Error fetching media:", error);
-        // You might want to display an error message to the user here
       });
   }, [currentPath]);
 
-  // Use useMemo for efficient filtering
   const filteredFolders = useMemo(() => {
-    if (!searchTerm) {
-      return allFolders; // Return all folders if no search term
-    }
+    if (!searchTerm) return allFolders;
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
     return allFolders.filter((folder) =>
       folder.toLowerCase().includes(lowerCaseSearchTerm)
     );
-  }, [allFolders, searchTerm]); // Recalculate if allFolders or searchTerm changes
+  }, [allFolders, searchTerm]);
 
   const filteredVideos = useMemo(() => {
-    if (!searchTerm) {
-      return allVideos; // Return all videos if no search term
-    }
+    if (!searchTerm) return allVideos;
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
     return allVideos.filter((video) =>
       video.name.toLowerCase().includes(lowerCaseSearchTerm)
     );
-  }, [allVideos, searchTerm]); // Recalculate if allVideos or searchTerm changes
+  }, [allVideos, searchTerm]);
 
-  // --- Sorting Logic using useMemo ---
   const sortedFolders = useMemo(() => {
-    // Folders are always sorted by name
-    const sorted = [...filteredFolders].sort((a, b) => {
-      return a.localeCompare(b);
-    });
+    const sorted = [...filteredFolders].sort((a, b) => a.localeCompare(b));
     return sortDirection === "asc" ? sorted : sorted.reverse();
-  }, [filteredFolders, sortDirection]); // Sort folders based on current sort direction (but always by name)
+  }, [filteredFolders, sortDirection]);
 
   const sortedVideos = useMemo(() => {
     const sorted = [...filteredVideos].sort((a, b) => {
@@ -96,24 +79,19 @@ export default function Home() {
       } else if (sortKey === "size") {
         comparison = a.size - b.size;
       } else if (sortKey === "created_at") {
-        // Parse date strings to compare
         const dateA = new Date(a.created_at).getTime();
         const dateB = new Date(b.created_at).getTime();
         comparison = dateA - dateB;
       }
       return comparison;
     });
-
     return sortDirection === "asc" ? sorted : sorted.reverse();
   }, [filteredVideos, sortKey, sortDirection]);
-  // --- End Sorting Logic ---
 
   const handleSortChange = (key: SortKey) => {
     if (sortKey === key) {
-      // If same key, toggle direction
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // If new key, set key and default to ascending
       setSortKey(key);
       setSortDirection("asc");
     }
@@ -131,13 +109,21 @@ export default function Home() {
   };
 
   const goToFolder = (folder: string) => {
-    // Ensure correct path concatenation for Windows-style paths
-    const newPath = currentPath === "" ? folder : `${currentPath}\\${folder}`;
+    // Using forward slash for better cross-platform compatibility.
+    const newPath = currentPath ? `${currentPath}/${folder}` : folder;
     navigate(`/?path=${encodeURIComponent(newPath)}`);
   };
 
+  // --- MODIFIED FUNCTION ---
   const openVideo = (videoPath: string) => {
-    navigate(`/video?path=${encodeURIComponent(videoPath)}`);
+    // Create an array of all sorted video paths
+    const videoPaths = sortedVideos.map((v) => v.path);
+    // Stringify and encode the array to pass it as a URL parameter
+    const playlistParam = encodeURIComponent(JSON.stringify(videoPaths));
+    // Navigate to the video page with both the specific video path and the full playlist
+    navigate(
+      `/video?path=${encodeURIComponent(videoPath)}&playlist=${playlistParam}`
+    );
   };
 
   return (
@@ -146,34 +132,21 @@ export default function Home() {
         <TopNav />
       </div>
       <div className="flex-grow">
-        {" "}
-        {/* Allows breadcrumbs to take available space */}
         <Breadcrumbs items={breadcrumbItems} />
       </div>
       <div className="flex flex-wrap items-center justify-between mb-4">
-        {" "}
-        {/* Adjusted for better layout */}
-        {/* Breadcrumbs on one side */}
-        {/* SearchBar on the other side */}
         <div className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4">
-          {" "}
-          {/* Responsive width for search bar */}
-          <SearchBar
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />{" "}
-          {/* Pass props here */}
+          <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
-        {/* --- NEW: Sort Controls (Compact) --- */}
         <div className="flex flex-col sm:flex-row sm:justify-end sm:items-center text-sm">
-          <span className="text-gray-600 dark:text-gray-400 mb-2 sm:mb-0 sm:mr-4">
+          {/* <span className="text-gray-600 dark:text-gray-400 mb-2 sm:mb-0 sm:mr-4">
             Sort by:
-          </span>
+          </span> */}
           <div className="flex flex-wrap gap-2">
-            {" "}
-            {/* Button group */}
-            <button
+            <Button
               onClick={() => handleSortChange("name")}
+              size={"sm"}
+              title="Sort by Name"
               className={`flex items-center px-3 py-1 rounded-full ${
                 sortKey === "name"
                   ? "bg-blue-600 text-white"
@@ -181,9 +154,11 @@ export default function Home() {
               } hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200`}
             >
               Name {renderSortIcon("name")}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => handleSortChange("size")}
+              size={"sm"}
+              title="Sort by Size of the Files, for folders fallbacks to Name Sort"
               className={`flex items-center px-3 py-1 rounded-full ${
                 sortKey === "size"
                   ? "bg-blue-600 text-white"
@@ -191,9 +166,11 @@ export default function Home() {
               } hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200`}
             >
               Size {renderSortIcon("size")}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => handleSortChange("created_at")}
+              size={"sm"}
+              title="Sort by Size of the Date, for folders fallbacks to Name Sort"
               className={`flex items-center px-3 py-1 rounded-full ${
                 sortKey === "created_at"
                   ? "bg-blue-600 text-white"
@@ -201,12 +178,11 @@ export default function Home() {
               } hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200`}
             >
               Date {renderSortIcon("created_at")}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Use sortedFolders and sortedVideos for rendering */}
       {sortedFolders.length > 0 && (
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-2">Folders</h2>

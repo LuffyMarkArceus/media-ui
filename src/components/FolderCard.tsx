@@ -28,6 +28,7 @@ export const FolderCard: React.FC<FolderCardProps> = ({
         
         transition-colors duration-200
       "
+      title={folderName}
     >
       <Folder className="w-7 h-7" fill="orange" color="orange" />{" "}
       {/* Example: Folder icon */}

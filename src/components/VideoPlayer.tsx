@@ -8,25 +8,21 @@ import {
   defaultLayoutIcons,
   DefaultVideoLayout,
 } from "@vidstack/react/player/layouts/default";
-import { Button } from "./ui/button";
 
 export function VideoPlayer({
   src,
-  title,
   subtitlePath,
+  onEnded, // --- NEW: Callback for when the video finishes ---
 }: {
   src: string;
-  title: string | undefined;
   subtitlePath: string | undefined;
+  onEnded?: () => void; // Make it an optional function
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasSubtitle, setHasSubtitle] = useState(false);
 
-  // console.log("VIDEOPLAYER SUBS PATH:", subtitlePath);
-
   useEffect(() => {
     if (!subtitlePath) return;
-
     fetch(`/api/subtitle/${encodeURIComponent(subtitlePath)}`, {
       method: "GET",
     })
@@ -43,11 +39,9 @@ export function VideoPlayer({
       const hls = new Hls();
       hls.loadSource(src);
       hls.attachMedia(videoRef.current);
-      console.log("HLS supported, using Hls.js");
       return () => hls.destroy();
     } else if (videoRef.current) {
       videoRef.current.src = src;
-      console.warn("HLS not supported, using native video element.");
     }
   }, [src]);
 
@@ -55,8 +49,10 @@ export function VideoPlayer({
     <div className="relative w-full max-w-4xl mx-auto">
       <MediaPlayer
         // title={title}
+        aspectRatio="16/9"
         src={{ src: src, type: "video/mp4" }}
         className="aspect-video w-full rounded-lg overflow-hidden border border-gray-300 dark:border-zinc-700 shadow-md dark:shadow-lg bg-white dark:bg-zinc-800"
+        onEnded={onEnded} // --- NEW: Pass the onEnded prop to the player ---
       >
         <MediaProvider>
           {hasSubtitle && subtitlePath && (
@@ -71,12 +67,6 @@ export function VideoPlayer({
         </MediaProvider>
         <DefaultVideoLayout icons={defaultLayoutIcons} />
       </MediaPlayer>
-
-      <Button variant={"default"} className="mt-4">
-        <a href={src} download={title}>
-          Download
-        </a>
-      </Button>
     </div>
   );
 }
