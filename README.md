@@ -16,6 +16,8 @@ It allows you to view and download media files.
 - [x] Add a search bar to search for media files & folders.
 - [x] Add an option to sort the file view by name, size, created_at
 
+- [x] Add toast & progress for download via dropdown
+- [x] Add file renaming.
+
 - [ ] Move folder open state to URL.
 - [ ] Add file uploading.
-- [ ] Add file renaming.

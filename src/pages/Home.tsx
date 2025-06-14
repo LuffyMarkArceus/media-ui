@@ -1,8 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-
 import { ArrowUp, ArrowDown } from "lucide-react";
-
 import { TopNav } from "../components/topnav";
 import { VideoCard } from "../components/VideoCard";
 import { FolderCard } from "../components/FolderCard";
@@ -35,19 +33,22 @@ export default function Home() {
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
-  useEffect(() => {
-    axios
-      .get("/api/media", {
+  const refreshFiles = async () => {
+    try {
+      const response = await axios.get("/api/media", {
         params: { path: currentPath },
-      })
-      .then((res) => {
-        setAllVideos(res.data.files || []);
-        setAllFolders(res.data.folders || []);
-        setSearchTerm("");
-      })
-      .catch((error) => {
-        console.error("Error fetching media:", error);
       });
+      setAllVideos(response.data.files || []);
+      setAllFolders(response.data.folders || []);
+
+      console.log(response);
+    } catch (error) {
+      console.error("Error refreshing media:", error);
+    }
+  };
+
+  useEffect(() => {
+    refreshFiles();
   }, [currentPath]);
 
   const filteredFolders = useMemo(() => {
@@ -109,18 +110,13 @@ export default function Home() {
   };
 
   const goToFolder = (folder: string) => {
-    // Using forward slash for better cross-platform compatibility.
     const newPath = currentPath ? `${currentPath}/${folder}` : folder;
     navigate(`/?path=${encodeURIComponent(newPath)}`);
   };
 
-  // --- MODIFIED FUNCTION ---
   const openVideo = (videoPath: string) => {
-    // Create an array of all sorted video paths
     const videoPaths = sortedVideos.map((v) => v.path);
-    // Stringify and encode the array to pass it as a URL parameter
     const playlistParam = encodeURIComponent(JSON.stringify(videoPaths));
-    // Navigate to the video page with both the specific video path and the full playlist
     navigate(
       `/video?path=${encodeURIComponent(videoPath)}&playlist=${playlistParam}`
     );
@@ -139,9 +135,6 @@ export default function Home() {
           <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
         <div className="flex flex-col sm:flex-row sm:justify-end sm:items-center text-sm">
-          {/* <span className="text-gray-600 dark:text-gray-400 mb-2 sm:mb-0 sm:mr-4">
-            Sort by:
-          </span> */}
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => handleSortChange("name")}
@@ -204,7 +197,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedVideos.map((video) => (
               <div key={video.path} onClick={() => openVideo(video.path)}>
-                <VideoCard video={video} />
+                <VideoCard video={video} refreshFiles={refreshFiles} />
               </div>
             ))}
           </div>
