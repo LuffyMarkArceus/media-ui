@@ -49,6 +49,7 @@ export default function Home() {
 
   useEffect(() => {
     refreshFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPath]);
 
   const filteredFolders = useMemo(() => {
