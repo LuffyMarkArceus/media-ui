@@ -12,11 +12,11 @@ import {
 export function VideoPlayer({
   src,
   subtitlePath,
-  onEnded, // --- NEW: Callback for when the video finishes ---
+  onEnded,
 }: {
   src: string;
   subtitlePath: string | undefined;
-  onEnded?: () => void; // Make it an optional function
+  onEnded?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasSubtitle, setHasSubtitle] = useState(false);
@@ -37,8 +37,20 @@ export function VideoPlayer({
   useEffect(() => {
     if (Hls.isSupported() && videoRef.current) {
       const hls = new Hls();
-      hls.loadSource(src);
+
+      hls.loadSource(
+        `/api/hls?path=${encodeURIComponent(src.split("path=")[1])}`
+      );
+
       hls.attachMedia(videoRef.current);
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error("HLS Error:", event, data);
+        console.log(src.split("path=")[1]);
+        if (videoRef.current) {
+          videoRef.current.src = src; // Fallback to direct stream
+        }
+      });
+
       return () => hls.destroy();
     } else if (videoRef.current) {
       videoRef.current.src = src;
@@ -50,9 +62,12 @@ export function VideoPlayer({
       <MediaPlayer
         // title={title}
         aspectRatio="16/9"
-        src={{ src: src, type: "video/mp4" }}
+        src={{
+          src: `/api/hls?path=${encodeURIComponent(src.split("path=")[1])}`,
+          type: "application/x-mpegurl",
+        }}
         className="aspect-video w-full rounded-lg overflow-hidden border border-gray-300 dark:border-zinc-700 shadow-md dark:shadow-lg bg-white dark:bg-zinc-800"
-        onEnded={onEnded} // --- NEW: Pass the onEnded prop to the player ---
+        onEnded={onEnded}
       >
         <MediaProvider>
           {hasSubtitle && subtitlePath && (
