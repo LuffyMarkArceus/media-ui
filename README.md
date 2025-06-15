@@ -19,5 +19,23 @@ It allows you to view and download media files.
 - [x] Add toast & progress for download via dropdown
 - [x] Add file renaming.
 
-- [ ] Move folder open state to URL.
+- [ ] Add toast & progress for download on the videopage as well
 - [ ] Add file uploading.
+- [ ] Send the playlist of only next 5 videos, rther than all, if a folder has 1000 files, the URL will be too big, since playlist param will contain 1000 entries.
+
+- [ ] Maybe, File Deletion
+
+## 💡 Bonus Ideas
+
+- [ ] Infinite scroll/pagination for folders with 1000+ files.
+- [ ] Add filtering options (by name, type, duration).
+- [-] Dark mode toggle (currently hardcoded to dark).
+
+- [ ] Show video duration inside the `VideoCard`.
+- [ ] Show video resolution (e.g., 720p, 1080p).
+
+- [ ] Add `recently viewed` section on the homepage.
+- [ ] Add keyboard shortcuts (e.g., `j/k` to navigate files).
+- [ ] Option to mark files as favorite/bookmark.
+- [ ] Grid vs List toggle in the file explorer view.
+- [ ] Preload thumbnails while scrolling.
