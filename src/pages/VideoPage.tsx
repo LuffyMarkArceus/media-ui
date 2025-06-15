@@ -70,6 +70,8 @@ export default function VideoPage() {
   const fileName = decodeURIComponent(path.split("/").pop() || path);
   // const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt"); // Use full path with .vtt
 
+  console.log("SUB PATH for backend: ", fileName);
+
   return (
     <div className="min-h-screen p-4 bg-white text-black dark:bg-zinc-900 dark:text-white transition-colors duration-300">
       <div>

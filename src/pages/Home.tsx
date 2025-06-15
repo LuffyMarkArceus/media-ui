@@ -32,6 +32,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [serverStat, setServerStat] = useState(0);
 
   const refreshFiles = async () => {
     try {
@@ -42,8 +43,12 @@ export default function Home() {
       setAllFolders(response.data.folders || []);
 
       console.log(response);
+      setServerStat(200);
     } catch (error) {
       console.error("Error refreshing media:", error);
+      setAllFolders([]);
+      setAllVideos([]);
+      setServerStat(500);
     }
   };
 
@@ -214,7 +219,10 @@ export default function Home() {
         )}
       {!searchTerm && allVideos.length === 0 && allFolders.length === 0 && (
         <div className="text-gray-500 mt-4">
-          No files or folders in this path.
+          No files or folders in this path,
+          {serverStat == 200
+            ? " either intentionally/hidden"
+            : " failed to load from server"}
         </div>
       )}
     </div>
