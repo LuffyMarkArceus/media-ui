@@ -42,7 +42,7 @@ export default function Home() {
       setAllVideos(response.data.files || []);
       setAllFolders(response.data.folders || []);
 
-      console.log(response);
+      // console.log(response);
       setServerStat(200);
     } catch (error) {
       console.error("Error refreshing media:", error);
