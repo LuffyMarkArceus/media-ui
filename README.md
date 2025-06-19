@@ -21,9 +21,9 @@ It allows you to view and download media files.
 
 - [ ] Add toast & progress for download on the videopage as well
 - [ ] Add file uploading.
-- [ ] Send the playlist of only next 5 videos, rther than all, if a folder has 1000 files, the URL will be too big, since playlist param will contain 1000 entries.
+- [ ] Send the playlist of only next 5 videos, not all (URL Optimization).
 
-- [ ] Maybe, File Deletion
+- [ ] Maybe, File Deletion UI
 
 ## 💡 Bonus Ideas
 
