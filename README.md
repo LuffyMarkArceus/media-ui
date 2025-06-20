@@ -19,7 +19,7 @@ It allows you to view and download media files.
 - [x] Add toast & progress for download via dropdown
 - [x] Add file renaming.
 
-- [ ] Add toast & progress for download on the videopage as well
+- [x] Add toast & progress for download on the videopage as well
 - [ ] Add file uploading.
 - [ ] Send the playlist of only next 5 videos, not all (URL Optimization).
 
@@ -29,7 +29,7 @@ It allows you to view and download media files.
 
 - [ ] Infinite scroll/pagination for folders with 1000+ files.
 - [ ] Add filtering options (by name, type, duration).
-- [-] Dark mode toggle (currently hardcoded to dark).
+<!-- - [-] Dark mode toggle (currently hardcoded to dark). -->
 
 - [ ] Show video duration inside the `VideoCard`.
 - [ ] Show video resolution (e.g., 720p, 1080p).
@@ -38,4 +38,4 @@ It allows you to view and download media files.
 - [ ] Add keyboard shortcuts (e.g., `j/k` to navigate files).
 - [ ] Option to mark files as favorite/bookmark.
 - [ ] Grid vs List toggle in the file explorer view.
-- [ ] Preload thumbnails while scrolling.
+- [ ] Preload thumbnails while scrolling.git branch
