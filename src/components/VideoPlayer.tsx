@@ -58,7 +58,7 @@ export function VideoPlayer({
           {hasSubtitle && subtitlePath && (
             <track
               kind="subtitles"
-              src={`/api/subtitle/${encodeURIComponent(subtitlePath)}`}
+              src={`/api/proxy_subtitle/${encodeURIComponent(subtitlePath)}`}
               srcLang="en"
               label="English"
               default

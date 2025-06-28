@@ -76,7 +76,7 @@ export default function VideoPage() {
   }
 
   const fileName = decodeURIComponent(path.split("/").pop() || path);
-  // const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt"); // Use full path with .vtt
+  const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt"); // Use full path with .vtt
 
   console.log("SUB PATH for backend: ", fileName);
 
@@ -195,7 +195,7 @@ export default function VideoPage() {
 
       <VideoPlayer
         src={`/api/media_stream?path=${encodeURIComponent(path)}`}
-        subtitlePath={path}
+        subtitlePath={subtitlePath}
         onEnded={handleVideoEnded}
       />
 

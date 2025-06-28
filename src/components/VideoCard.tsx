@@ -171,7 +171,9 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
     >
       <Link to={`/video?path=${encodeURIComponent(video.path)}`}>
         <img
-          src={`/api/thumbnail/${encodeURIComponent(video.path)}`}
+          src={`/api/thumbnail/${encodeURIComponent(
+            video.path.replace(/\.[^/.]+$/, ".jpg")
+          )}`}
           alt={video.name}
           className="w-full h-32 object-cover"
         />
