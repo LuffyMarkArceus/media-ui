@@ -21,6 +21,8 @@ interface FileItem {
 type SortKey = "name" | "size" | "created_at";
 type SortDirection = "asc" | "desc";
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL;
+
 export default function Home() {
   const [allVideos, setAllVideos] = useState<FileItem[]>([]);
   const [allFolders, setAllFolders] = useState<string[]>([]);
@@ -36,13 +38,16 @@ export default function Home() {
 
   const refreshFiles = async () => {
     try {
-      const response = await axios.get("/api/media", {
+      const response = await axios.get(`${API_URL}/media`, {
         params: { path: currentPath },
       });
-      setAllVideos(response.data.files || []);
-      setAllFolders(response.data.folders || []);
 
-      // console.log(response);
+      const files = response.data.files.filter(
+        (f: { size: number; type: string }) => f.size !== 0 || f.type !== ""
+      );
+
+      setAllVideos(files || []);
+      setAllFolders(response.data.folders || []);
       setServerStat(200);
     } catch (error) {
       console.error("Error refreshing media:", error);

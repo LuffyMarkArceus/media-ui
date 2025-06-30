@@ -9,21 +9,23 @@ import {
   DefaultVideoLayout,
 } from "@vidstack/react/player/layouts/default";
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL;
+
 export function VideoPlayer({
   src,
   subtitlePath,
-  onEnded, // --- NEW: Callback for when the video finishes ---
+  onEnded,
 }: {
   src: string;
   subtitlePath: string | undefined;
-  onEnded?: () => void; // Make it an optional function
+  onEnded?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasSubtitle, setHasSubtitle] = useState(false);
 
   useEffect(() => {
     if (!subtitlePath) return;
-    fetch(`/api/subtitle/${encodeURIComponent(subtitlePath)}`, {
+    fetch(`${API_URL}/subtitle/${encodeURIComponent(subtitlePath)}`, {
       method: "GET",
     })
       .then((res) => {
@@ -48,17 +50,18 @@ export function VideoPlayer({
   return (
     <div className="relative w-full max-w-4xl mx-auto">
       <MediaPlayer
-        // title={title}
         aspectRatio="16/9"
         src={{ src: src, type: "video/mp4" }}
         className="aspect-video w-full rounded-lg overflow-hidden border border-gray-300 dark:border-zinc-700 shadow-md dark:shadow-lg bg-white dark:bg-zinc-800"
-        onEnded={onEnded} // --- NEW: Pass the onEnded prop to the player ---
+        onEnded={onEnded}
       >
         <MediaProvider>
           {hasSubtitle && subtitlePath && (
             <track
               kind="subtitles"
-              src={`/api/proxy_subtitle/${encodeURIComponent(subtitlePath)}`}
+              src={`${API_URL}/proxy_subtitle/${encodeURIComponent(
+                subtitlePath
+              )}`}
               srcLang="en"
               label="English"
               default

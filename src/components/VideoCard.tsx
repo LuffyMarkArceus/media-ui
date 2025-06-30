@@ -23,13 +23,15 @@ interface VideoCardProps {
   refreshFiles: () => Promise<void>;
 }
 
+const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
+
 export function VideoCard({ video, refreshFiles }: VideoCardProps) {
   const handleDownload = async (event: React.MouseEvent) => {
     event.stopPropagation();
     const toastId = `download-${video.path}`;
     try {
       const response = await fetch(
-        `/api/media_stream?path=${encodeURIComponent(video.path)}`,
+        `${API_BASE}/media_stream?path=${encodeURIComponent(video.path)}`,
         {
           headers: {
             Accept: "application/octet-stream",
@@ -129,7 +131,7 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
     if (!newName) return;
     try {
       const response = await fetch(
-        `/api/rename?path=${encodeURIComponent(video.path)}`,
+        `${API_BASE}/rename?path=${encodeURIComponent(video.path)}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -171,7 +173,7 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
     >
       <Link to={`/video?path=${encodeURIComponent(video.path)}`}>
         <img
-          src={`/api/thumbnail/${encodeURIComponent(
+          src={`${API_BASE}/thumbnail/${encodeURIComponent(
             video.path.replace(/\.[^/.]+$/, ".jpg")
           )}`}
           alt={video.name}
@@ -205,18 +207,10 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
             align="end"
             onClick={(e) => e.stopPropagation()}
           >
-            <DropdownMenuItem
-              onClick={handleDownload}
-              title={`/media_stream/?path=${encodeURIComponent(video.path)}`}
-            >
+            <DropdownMenuItem onClick={handleDownload}>
               Download
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleRename}
-              title={`/rename?path=${encodeURIComponent(video.path)}`}
-            >
-              Rename
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleRename}>Rename</DropdownMenuItem>
             <DropdownMenuItem
               onClick={(event) => {
                 event.stopPropagation();

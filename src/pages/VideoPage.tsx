@@ -12,11 +12,11 @@ import {
   ChevronsRight,
   DownloadIcon,
 } from "lucide-react";
-
 import { CustomToast } from "../components/CustomToast";
-
 import { toast } from "sonner";
 import { formatFileName } from "../lib/utils";
+
+const API_URL = import.meta.env.VITE_BACKEND_API_URL;
 
 export default function VideoPage() {
   const [searchParams] = useSearchParams();
@@ -76,9 +76,7 @@ export default function VideoPage() {
   }
 
   const fileName = decodeURIComponent(path.split("/").pop() || path);
-  const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt"); // Use full path with .vtt
-
-  console.log("SUB PATH for backend: ", fileName);
+  const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt");
 
   const handleDownload = async (event: React.MouseEvent) => {
     event.preventDefault();
@@ -96,7 +94,7 @@ export default function VideoPage() {
 
     try {
       const response = await fetch(
-        `/api/media_stream?path=${encodeURIComponent(path)}`,
+        `${API_URL}/media_stream?path=${encodeURIComponent(path)}`,
         {
           signal: controller.signal,
           headers: {
@@ -194,7 +192,7 @@ export default function VideoPage() {
       </h3>
 
       <VideoPlayer
-        src={`/api/media_stream?path=${encodeURIComponent(path)}`}
+        src={`${API_URL}/media_stream?path=${encodeURIComponent(path)}`}
         subtitlePath={subtitlePath}
         onEnded={handleVideoEnded}
       />
