@@ -33,11 +33,12 @@ export interface VideoMeta {
 interface VideoCardProps {
   video: VideoMeta;
   refreshFiles: () => Promise<void>;
+  isAdmin: boolean;
 }
 
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
 
-export function VideoCard({ video, refreshFiles }: VideoCardProps) {
+export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
   const navigate = useNavigate();
   const [newName, setNewName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -233,14 +234,16 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
               <DropdownMenuItem onClick={handleDownload}>
                 Download
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openRenameDialog();
-                }}
-              >
-                Rename
-              </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openRenameDialog();
+                  }}
+                >
+                  Rename
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();

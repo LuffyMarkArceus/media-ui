@@ -11,7 +11,9 @@ import { useBreadcrumbs } from "../hooks/useBreadcrumbs";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import SearchBar from "../components/SearchBar";
 import { Button } from "../components/ui/button";
-import { useAppContext } from "../context/AppContext"; // --- 1. ADD THIS IMPORT ---
+import { useAppContext } from "../context/AppContext";
+
+import { useUser } from "@clerk/clerk-react";
 
 interface FileItem {
   name: string;
@@ -25,8 +27,12 @@ type SortKey = "name" | "size" | "created_at";
 type SortDirection = "asc" | "desc";
 
 const API_URL = import.meta.env.VITE_BACKEND_API_URL;
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
 export default function Home() {
+  const { user } = useUser();
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
+
   const [allVideos, setAllVideos] = useState<FileItem[]>([]);
   const [allFolders, setAllFolders] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
@@ -217,7 +223,11 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedVideos.map((video) => (
               <div key={video.path} onClick={() => openVideo(video.path)}>
-                <VideoCard video={video} refreshFiles={refreshFiles} />
+                <VideoCard
+                  video={video}
+                  refreshFiles={refreshFiles}
+                  isAdmin={isAdmin}
+                />
               </div>
             ))}
           </div>
