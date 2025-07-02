@@ -3,7 +3,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "../src/components/theme-provider";
+import { AppProvider } from "./context/AppContext";
 import { ClerkProvider } from "@clerk/clerk-react";
 
 import { Toaster } from "sonner";
@@ -20,8 +21,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <ThemeProvider>
         <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
-          <Toaster richColors position="bottom-right" />
-          <App />
+          <AppProvider>
+            <Toaster richColors position="bottom-right" />
+            <App />
+          </AppProvider>
         </ClerkProvider>
       </ThemeProvider>
     </BrowserRouter>

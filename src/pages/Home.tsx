@@ -1,3 +1,5 @@
+// src/pages/Home.tsx
+
 import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { ArrowUp, ArrowDown } from "lucide-react";
@@ -9,6 +11,7 @@ import { useBreadcrumbs } from "../hooks/useBreadcrumbs";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import SearchBar from "../components/SearchBar";
 import { Button } from "../components/ui/button";
+import { useAppContext } from "../context/AppContext"; // --- 1. ADD THIS IMPORT ---
 
 interface FileItem {
   name: string;
@@ -28,6 +31,9 @@ export default function Home() {
   const [allFolders, setAllFolders] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // --- 2. GET THE FUNCTION FROM THE CONTEXT ---
+  const { setCurrentPath } = useAppContext();
 
   const currentPath = searchParams.get("path") || "";
   const breadcrumbItems = useBreadcrumbs();
@@ -59,9 +65,12 @@ export default function Home() {
 
   useEffect(() => {
     refreshFiles();
+    // --- 3. UPDATE THE GLOBAL CONTEXT WITH THE CURRENT PATH ---
+    setCurrentPath(currentPath);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPath]);
+  }, [currentPath, setCurrentPath]); // Add setCurrentPath to dependency array
 
+  // ... (rest of your Home.tsx component remains the same) ...
   const filteredFolders = useMemo(() => {
     if (!searchTerm) return allFolders;
     const lowerCaseSearchTerm = searchTerm.toLowerCase();

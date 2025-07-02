@@ -3,6 +3,10 @@ import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { TopNav } from "../components/topnav";
 import { Toaster, toast } from "sonner";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Progress } from "../components/ui/progress";
+import { Separator } from "../components/ui/separator";
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL;
@@ -71,10 +75,8 @@ export default function Upload() {
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append("files", file));
 
-    // --- Build the URL with the path query parameter ---
     const url = new URL(`${BACKEND_URL}/upload`);
     if (uploadPath) {
-      // The Go backend sanitizes ".." but trimming here is good practice
       url.searchParams.append("path", uploadPath.trim());
     }
 
@@ -119,98 +121,99 @@ export default function Upload() {
     xhr.open("POST", url.toString());
     xhr.send(formData);
   };
+
   return (
-    <div className="min-h-screen p-4 bg-white dark:bg-zinc-900 dark:text-white transition-colors duration-300">
+    <div className="min-h-screen bg-white dark:bg-zinc-900 dark:text-white p-4 transition-colors duration-300">
       <Toaster richColors position="bottom-right" />
-      <div className="flex items-center justify-between mb-6">
-        <TopNav />
-      </div>
-      <h1 className="text-2xl font-bold mb-4">Admin Upload</h1>
+      <TopNav />
 
-      {/* --- New Input Field for Upload Path --- */}
-      <div className="mb-4 max-w-xl">
-        <label htmlFor="uploadPath" className="block text-sm font-medium mb-1">
-          Upload to Folder (optional)
-        </label>
-        <input
-          id="uploadPath"
-          type="text"
-          value={uploadPath}
-          onChange={(e) => setUploadPath(e.target.value)}
-          placeholder="e.g., videos/summer-trip-2025"
-          className="w-full p-2 rounded border bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={uploading}
-        />
-      </div>
-      <div
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        className="border-4 border-dashed border-gray-400 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-600 transition-colors"
-      >
-        <p>Drag and drop files here, or</p>
-        <label
-          htmlFor="fileInput"
-          className="text-blue-600 dark:text-blue-400 cursor-pointer underline"
-        >
-          browse to select files
-        </label>
-        <input
-          id="fileInput"
-          type="file"
-          multiple
-          onChange={onFileChange}
-          className="hidden"
-        />
-      </div>
+      <div className="max-w-3xl mx-auto mt-8 space-y-6">
+        <h1 className="text-3xl font-bold text-center">Admin Upload</h1>
 
-      {selectedFiles.length > 0 && (
-        <div className="mt-4">
-          <h2 className="font-semibold">Files to upload:</h2>
-          <ul className="list-disc list-inside max-h-48 overflow-auto">
-            {selectedFiles.map((file, idx) => (
-              <li key={idx}>
-                {file.name} - {(file.size / (1024 * 1024)).toFixed(2)} MB
-              </li>
-            ))}
-          </ul>
-          <button
-            onClick={clearFiles}
-            className="mt-2 px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
-            disabled={uploading}
+        <Card className="p-6 space-y-4 shadow-lg border dark:border-zinc-700">
+          <div className="space-y-2">
+            <label htmlFor="uploadPath" className="text-sm font-medium">
+              Upload to Folder (optional)
+            </label>
+            <input
+              id="uploadPath"
+              type="text"
+              value={uploadPath}
+              onChange={(e) => setUploadPath(e.target.value)}
+              placeholder="e.g., movies/anime"
+              className="w-full px-3 py-2 border dark:border-zinc-600 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={uploading}
+            />
+          </div>
+
+          <Separator />
+
+          <div
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            className="p-6 text-center border-2 border-dashed rounded-lg dark:border-zinc-600 hover:border-blue-500 transition-colors cursor-pointer"
           >
-            Clear
-          </button>
-        </div>
-      )}
+            <p className="text-gray-700 dark:text-gray-300 mb-2">
+              Drag and drop files here or
+            </p>
+            <label
+              htmlFor="fileInput"
+              className="text-blue-600 dark:text-blue-400 underline cursor-pointer"
+            >
+              click to browse
+            </label>
+            <input
+              id="fileInput"
+              type="file"
+              multiple
+              onChange={onFileChange}
+              className="hidden"
+            />
+          </div>
 
-      {uploading && (
-        <div className="mt-4 w-full max-w-lg mx-auto">
-          <div className="text-center mb-1">Uploading: {uploadProgress}%</div>
-          <progress
-            value={uploadProgress}
-            max={100}
-            className="w-full h-4 rounded"
-          />
-          <button
-            onClick={cancelUpload}
-            className="mt-2 px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition-colors w-full"
+          {selectedFiles.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h2 className="text-sm font-semibold">Selected Files:</h2>
+              <ul className="max-h-40 overflow-auto space-y-1 text-sm list-disc pl-5">
+                {selectedFiles.map((file, idx) => (
+                  <li key={idx}>
+                    {file.name} – {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant="destructive"
+                onClick={clearFiles}
+                disabled={uploading}
+              >
+                Clear Files
+              </Button>
+            </div>
+          )}
+
+          {uploading && (
+            <div className="mt-4 space-y-2">
+              <Progress value={uploadProgress} />
+              <div className="text-sm text-center">{uploadProgress}%</div>
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={cancelUpload}
+              >
+                Cancel Upload
+              </Button>
+            </div>
+          )}
+
+          <Button
+            className="w-full"
+            onClick={uploadFiles}
+            disabled={uploading || selectedFiles.length === 0}
           >
-            Cancel Upload
-          </button>
-        </div>
-      )}
-
-      <button
-        onClick={uploadFiles}
-        disabled={uploading || selectedFiles.length === 0}
-        className={`mt-6 px-6 py-3 rounded text-white ${
-          uploading || selectedFiles.length === 0
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700"
-        } transition-colors`}
-      >
-        {uploading ? "Uploading..." : "Upload Files"}
-      </button>
+            {uploading ? "Uploading..." : "Upload Files"}
+          </Button>
+        </Card>
+      </div>
     </div>
   );
 }

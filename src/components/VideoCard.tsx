@@ -1,4 +1,9 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+import { useRef } from "react";
+import { CustomToast } from "../components/CustomToast";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,7 +11,14 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Button } from "../components/ui/button";
-import { Progress } from "../components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
 import { toast } from "sonner";
 import { MoreVertical } from "lucide-react";
 import { formatFileSize, formatFileName } from "../lib/utils";
@@ -26,23 +38,52 @@ interface VideoCardProps {
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
 
 export function VideoCard({ video, refreshFiles }: VideoCardProps) {
+  const navigate = useNavigate();
+  const [newName, setNewName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRenameDialogOpen, setRenameDialogOpen] = useState(false);
+
+  const openRenameDialog = () => {
+    setNewName(video.name.replace(/\.[^/.]+$/, ""));
+    setRenameDialogOpen(true);
+  };
+
+  const handleCardClick = () => {
+    navigate(`/video?path=${encodeURIComponent(video.path)}`);
+  };
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const handleDownload = async (event: React.MouseEvent) => {
     event.stopPropagation();
+
     const toastId = `download-${video.path}`;
+
+    const handleCancelDownload = () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      toast.dismiss(toastId);
+    };
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const fileName = formatFileName(video.name);
+
     try {
       const response = await fetch(
         `${API_BASE}/media_stream?path=${encodeURIComponent(video.path)}`,
         {
+          signal: controller.signal,
           headers: {
             Accept: "application/octet-stream",
           },
         }
       );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      if (!response.body) {
-        throw new Error("Response Body is NULL");
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Download failed: HTTP ${response.status}`);
       }
 
       const contentLength = response.headers.get("Content-Length");
@@ -51,16 +92,13 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
 
       toast.custom(
         () => (
-          <div className="flex flex-col gap-2 p-4 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
-            <div className="font-semibold text-sm">
-              Downloading {formatFileName(video.name)}
-            </div>
-            <Progress value={0} className="w-64" />
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {formatFileSize(receivedBytes)} /{" "}
-              {totalBytes ? formatFileSize(totalBytes) : "Unknown"}
-            </div>
-          </div>
+          <CustomToast
+            fileName={fileName}
+            progress={0}
+            received={0}
+            total={totalBytes}
+            onCancel={handleCancelDownload}
+          />
         ),
         { id: toastId, duration: Infinity }
       );
@@ -80,16 +118,13 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
             const progress = Math.min((receivedBytes / totalBytes) * 100, 100);
             toast.custom(
               () => (
-                <div className="flex flex-col gap-2 p-4 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
-                  <div className="font-semibold text-sm">
-                    Downloading {formatFileName(video.name)}
-                  </div>
-                  <Progress value={progress} className="w-64" />
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatFileSize(receivedBytes)} /{" "}
-                    {formatFileSize(totalBytes)}
-                  </div>
-                </div>
+                <CustomToast
+                  fileName={fileName}
+                  progress={progress}
+                  received={receivedBytes}
+                  total={totalBytes}
+                  onCancel={handleCancelDownload}
+                />
               ),
               { id: toastId, duration: Infinity }
             );
@@ -98,8 +133,6 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
       }
 
       const blob = new Blob(chunks);
-      console.debug(`Received blob size: ${blob.size} bytes`);
-
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       document.body.appendChild(a);
@@ -110,25 +143,21 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
       window.URL.revokeObjectURL(url);
 
       toast.dismiss(toastId);
-      toast.success(`Download complete: ${formatFileName(video.name)}`, {
-        duration: 3000,
-      });
+      toast.success(`Download complete: ${fileName}`);
     } catch (error) {
       console.error("Error downloading file:", error);
       toast.dismiss(toastId);
-      toast.error(`Failed to download: ${formatFileName(video.name)}`, {
-        duration: 4000,
-      });
+      toast.error(`Failed to download: ${fileName}`);
     }
   };
 
-  const handleRename = async (event: React.MouseEvent) => {
-    event.stopPropagation();
-    const newName = prompt(
-      `Enter new name for ${video.name}:`,
-      video.name.replace(/\.[^/.]+$/, "")
-    );
-    if (!newName) return;
+  const handleRename = async () => {
+    if (!newName.trim()) {
+      toast.error("New name cannot be empty");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const response = await fetch(
         `${API_BASE}/rename?path=${encodeURIComponent(video.path)}`,
@@ -138,40 +167,35 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
           body: JSON.stringify({ newName }),
         }
       );
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          `HTTP error! Status: ${response.status}, Message: ${
-            errorData.error || "Unknown error"
-          }`
+          `HTTP ${response.status}: ${errorData?.error || "Unknown error"}`
         );
       }
 
       const data = await response.json();
-      console.log("Rename response:", data);
-      toast.success(`File renamed to ${formatFileName(data.newPath)}`, {
-        duration: 3000,
-      });
-      setTimeout(() => refreshFiles(), 2000);
+      toast.success(`Renamed to ${formatFileName(data.newPath)}`);
+      setRenameDialogOpen(false);
+      await refreshFiles();
     } catch (error) {
-      console.error("Error renaming file:", error);
       toast.error(
-        `Failed to rename ${formatFileName(video.name)}: ${
+        `Rename failed: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`,
-        {
-          duration: 4000,
-        }
+        }`
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      key={video.path}
-      className="relative border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden shadow-sm hover:shadow-md dark:hover:shadow-lg transition-shadow duration-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700"
-    >
-      <Link to={`/video?path=${encodeURIComponent(video.path)}`}>
+    <>
+      <div
+        className="relative border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden shadow-sm hover:shadow-md dark:hover:shadow-lg transition-shadow duration-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 cursor-pointer"
+        onClick={handleCardClick}
+      >
         <img
           src={`${API_BASE}/thumbnail/${encodeURIComponent(
             video.path.replace(/\.[^/.]+$/, ".jpg")
@@ -179,49 +203,83 @@ export function VideoCard({ video, refreshFiles }: VideoCardProps) {
           alt={video.name}
           className="w-full h-32 object-cover"
         />
-      </Link>
 
-      <div className="p-2" title={video.name}>
-        <div className="font-semibold text-sm">
-          {formatFileName(video.name)}
+        <div className="p-2" title={video.name}>
+          <div className="font-semibold text-sm">
+            {formatFileName(video.name)}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {formatFileSize(video.size)}
+          </div>
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          {formatFileSize(video.size)}
-        </div>
-      </div>
 
-      <div className="absolute bottom-1 right-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-600 dark:text-gray-300 hover:bg-transparent"
+        <div className="absolute bottom-1 right-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-600 dark:text-gray-300 hover:bg-transparent"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="top"
+              align="end"
               onClick={(e) => e.stopPropagation()}
             >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            side="top"
-            align="end"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DropdownMenuItem onClick={handleDownload}>
-              Download
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleRename}>Rename</DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(event) => {
-                event.stopPropagation();
-                alert(`Share: ${video.name}`);
-              }}
-            >
-              Share
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem onClick={handleDownload}>
+                Download
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openRenameDialog();
+                }}
+              >
+                Rename
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  alert(`Share: ${video.name}`);
+                }}
+              >
+                Share
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-    </div>
+
+      <Dialog open={isRenameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Rename File</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Enter new name without extension"
+            disabled={isSubmitting}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <DialogFooter className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="ghost"
+              onClick={() => setRenameDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleRename} disabled={isSubmitting}>
+              {isSubmitting ? "Renaming..." : "Rename"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
