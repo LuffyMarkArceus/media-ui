@@ -25,6 +25,8 @@ It allows you to view and download media files.
 
 - [ ] Maybe, File Deletion UI
 
+- [x] Deployed on Vercel.
+
 ## 💡 Bonus Ideas
 
 - [ ] Infinite scroll/pagination for folders with 1000+ files.
