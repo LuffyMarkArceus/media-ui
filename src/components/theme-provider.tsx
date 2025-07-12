@@ -1,6 +1,6 @@
 // src/components/theme-provider.tsx
 import { useEffect, useState, createContext, useContext } from "react";
-import { cn } from "@/lib/utils";
+// import { cn } from "../lib/utils";
 
 const ThemeContext = createContext({
   theme: "light",

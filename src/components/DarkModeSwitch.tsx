@@ -1,5 +1,5 @@
 // components/DarkModeSwitch.tsx
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "../components/ui/switch";
 import { useTheme } from "./theme-provider";
 
 export function DarkModeSwitch() {
