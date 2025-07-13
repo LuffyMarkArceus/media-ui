@@ -1,5 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { TopNav } from "../components/topnav";
 import { Breadcrumbs } from "../components/Breadcrumbs";
@@ -16,9 +16,13 @@ import { CustomToast } from "../components/CustomToast";
 import { toast } from "sonner";
 import { formatFileName } from "../lib/utils";
 
+import { useAuth } from "@clerk/clerk-react";
+
 const API_URL = import.meta.env.VITE_BACKEND_API_URL;
 
 export default function VideoPage() {
+  const { getToken } = useAuth();
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -71,12 +75,27 @@ export default function VideoPage() {
 
   const breadcrumbItems = useVideoPageBreadcrumbs(path);
 
-  if (!path) {
-    return <div className="p-4 text-red-500">Invalid video path.</div>;
-  }
+  const [videoUrl, setVideoUrl] = useState("");
+  const [subtitleUrl, setSubtitleUrl] = useState("");
 
   const fileName = decodeURIComponent(path.split("/").pop() || path);
   const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt");
+
+  useEffect(() => {
+    const fetchSecureUrls = async () => {
+      const token = await getToken();
+      if (token) {
+        const encodedPath = encodeURIComponent(path);
+
+        setVideoUrl(
+          `${API_URL}/media_stream?path=${encodedPath}&token=${token}`
+        );
+        setSubtitleUrl(subtitlePath); // ✅ Pass just relative path like "Folder/video.vtt"
+      }
+    };
+
+    fetchSecureUrls();
+  }, [path, subtitlePath, getToken]);
 
   const handleDownload = async (event: React.MouseEvent) => {
     event.preventDefault();
@@ -92,6 +111,7 @@ export default function VideoPage() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    const token = await getToken();
     try {
       const response = await fetch(
         `${API_URL}/media_stream?path=${encodeURIComponent(path)}`,
@@ -99,6 +119,7 @@ export default function VideoPage() {
           signal: controller.signal,
           headers: {
             Accept: "application/octet-stream",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -179,6 +200,10 @@ export default function VideoPage() {
     }
   };
 
+  if (!path) {
+    return <div className="p-4 text-red-500">Invalid video path.</div>;
+  }
+
   return (
     <div className="min-h-screen p-4 bg-white text-black dark:bg-zinc-900 dark:text-white transition-colors duration-300">
       <div>
@@ -192,8 +217,8 @@ export default function VideoPage() {
       </h3>
 
       <VideoPlayer
-        src={`${API_URL}/media_stream?path=${encodeURIComponent(path)}`}
-        subtitlePath={subtitlePath}
+        src={videoUrl}
+        subtitlePath={subtitleUrl}
         onEnded={handleVideoEnded}
       />
 

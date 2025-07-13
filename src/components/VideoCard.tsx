@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 
-import { useRef } from "react";
+import { useAxiosAuth } from "../hooks/useAxiosAuth";
 import { CustomToast } from "../components/CustomToast";
 
 import {
@@ -19,9 +20,10 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { toast } from "sonner";
 import { MoreVertical } from "lucide-react";
 import { formatFileSize, formatFileName } from "../lib/utils";
+
+import { useAuth } from "@clerk/clerk-react";
 
 export interface VideoMeta {
   name: string;
@@ -39,10 +41,23 @@ interface VideoCardProps {
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
 
 export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
+  const { getToken } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const [newName, setNewName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRenameDialogOpen, setRenameDialogOpen] = useState(false);
+
+  const axiosAuth = useAxiosAuth();
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const jwt = await getToken();
+      setToken(jwt);
+    })();
+  }, [getToken]);
 
   const openRenameDialog = () => {
     setNewName(video.name.replace(/\.[^/.]+$/, ""));
@@ -53,101 +68,58 @@ export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
     navigate(`/video?path=${encodeURIComponent(video.path)}`);
   };
 
-  const abortControllerRef = useRef<AbortController | null>(null);
-
   const handleDownload = async (event: React.MouseEvent) => {
     event.stopPropagation();
 
     const toastId = `download-${video.path}`;
+    const fileName = formatFileName(video.name);
 
     const handleCancelDownload = () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      if (abortControllerRef.current) abortControllerRef.current.abort();
       toast.dismiss(toastId);
     };
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    const fileName = formatFileName(video.name);
-
     try {
-      const response = await fetch(
-        `${API_BASE}/media_stream?path=${encodeURIComponent(video.path)}`,
-        {
-          signal: controller.signal,
-          headers: {
-            Accept: "application/octet-stream",
-          },
-        }
-      );
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
-      if (!response.ok || !response.body) {
-        throw new Error(`Download failed: HTTP ${response.status}`);
-      }
+      const response = await axiosAuth.get<ArrayBuffer>(`/media_stream`, {
+        params: { path: video.path },
+        responseType: "arraybuffer",
+        signal: controller.signal,
+      });
 
-      const contentLength = response.headers.get("Content-Length");
-      const totalBytes = contentLength ? parseInt(contentLength, 10) : null;
-      let receivedBytes = 0;
+      const blob = new Blob([response.data]);
+      const totalBytes = response.data.byteLength;
 
       toast.custom(
         () => (
           <CustomToast
             fileName={fileName}
-            progress={0}
-            received={0}
+            progress={100}
+            received={totalBytes}
             total={totalBytes}
             onCancel={handleCancelDownload}
           />
         ),
-        { id: toastId, duration: Infinity }
+        {
+          id: toastId,
+          duration: 2000,
+        }
       );
 
-      const reader = response.body.getReader();
-      const chunks: Uint8Array[] = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        if (value) {
-          chunks.push(value);
-          receivedBytes += value.length;
-
-          if (totalBytes) {
-            const progress = Math.min((receivedBytes / totalBytes) * 100, 100);
-            toast.custom(
-              () => (
-                <CustomToast
-                  fileName={fileName}
-                  progress={progress}
-                  received={receivedBytes}
-                  total={totalBytes}
-                  onCancel={handleCancelDownload}
-                />
-              ),
-              { id: toastId, duration: Infinity }
-            );
-          }
-        }
-      }
-
-      const blob = new Blob(chunks);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       document.body.appendChild(a);
       a.href = url;
       a.download = video.name;
       a.click();
-      document.body.removeChild(a);
+      a.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.dismiss(toastId);
       toast.success(`Download complete: ${fileName}`);
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      toast.dismiss(toastId);
+    } catch (err) {
+      console.error("Error downloading:", err);
       toast.error(`Failed to download: ${fileName}`);
     }
   };
@@ -160,31 +132,24 @@ export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(
-        `${API_BASE}/rename?path=${encodeURIComponent(video.path)}`,
+      const response = await axiosAuth.put(
+        "/rename",
         {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newName }),
+          newName,
+        },
+        {
+          params: { path: video.path },
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          `HTTP ${response.status}: ${errorData?.error || "Unknown error"}`
-        );
-      }
-
-      const data = await response.json();
-      toast.success(`Renamed to ${formatFileName(data.newPath)}`);
+      toast.success(`Renamed to ${formatFileName(response.data.newPath)}`);
       setRenameDialogOpen(false);
       await refreshFiles();
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("Rename error:", err);
       toast.error(
-        `Rename failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+        `Rename failed: ${err.response?.data?.error || "Unknown error"}`
       );
     } finally {
       setIsSubmitting(false);
@@ -198,13 +163,16 @@ export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
         onClick={handleCardClick}
       >
         <img
-          src={`${API_BASE}/thumbnail/${encodeURIComponent(
-            video.path.replace(/\.[^/.]+$/, ".jpg")
-          )}`}
+          src={
+            token
+              ? `${API_BASE}/proxy_thumbnail/${encodeURIComponent(
+                  video.path.replace(/\.[^/.]+$/, ".jpg")
+                )}?token=${token}`
+              : undefined
+          }
           alt={video.name}
           className="w-full h-32 object-cover"
         />
-
         <div className="p-2" title={video.name}>
           <div className="font-semibold text-sm">
             {formatFileName(video.name)}

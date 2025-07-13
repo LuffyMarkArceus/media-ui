@@ -1,7 +1,6 @@
 // src/pages/Home.tsx
 
 import { useEffect, useState, useMemo } from "react";
-import axios from "axios";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { TopNav } from "../components/topnav";
 import { VideoCard } from "../components/VideoCard";
@@ -14,6 +13,7 @@ import { Button } from "../components/ui/button";
 import { useAppContext } from "../context/AppContext";
 
 import { useUser } from "@clerk/clerk-react";
+import { useAxiosAuth } from "../hooks/useAxiosAuth";
 
 interface FileItem {
   name: string;
@@ -26,11 +26,12 @@ interface FileItem {
 type SortKey = "name" | "size" | "created_at";
 type SortDirection = "asc" | "desc";
 
-const API_URL = import.meta.env.VITE_BACKEND_API_URL;
+// const API_URL = import.meta.env.VITE_BACKEND_API_URL;
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
 export default function Home() {
   const { user } = useUser();
+
   const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
 
   const [allVideos, setAllVideos] = useState<FileItem[]>([]);
@@ -48,11 +49,14 @@ export default function Home() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [serverStat, setServerStat] = useState(0);
 
+  const axiosAuth = useAxiosAuth();
   const refreshFiles = async () => {
     try {
-      const response = await axios.get(`${API_URL}/media`, {
+      const response = await axiosAuth.get("/media", {
         params: { path: currentPath },
       });
+
+      // console.log(response);
 
       const files = response.data.files.filter(
         (f: { size: number; type: string }) => f.size !== 0 || f.type !== ""
