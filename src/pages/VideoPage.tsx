@@ -1,5 +1,5 @@
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useMemo, useRef, useState } from "react";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { TopNav } from "../components/topnav";
 import { Breadcrumbs } from "../components/Breadcrumbs";
@@ -16,21 +16,29 @@ import { CustomToast } from "../components/CustomToast";
 import { toast } from "sonner";
 import { formatFileName } from "../lib/utils";
 
-import { useAuth } from "@clerk/clerk-react";
+// import { useAuth } from "@clerk/clerk-react";
 
-const API_URL = import.meta.env.VITE_BACKEND_API_URL;
+// const API_URL = import.meta.env.VITE_BACKEND_API_URL;
 
 export default function VideoPage() {
-  const { getToken } = useAuth();
+  // const { getToken } = useAuth();
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const videoData = location.state?.videoData;
+  console.log(videoData);
   const path = decodeURIComponent(searchParams.get("path") ?? "");
   const playlistParam = searchParams.get("playlist");
+
+  // const fileName = decodeURIComponent(
+  //   videoData.path.split("/").pop() || videoData.path
+  // );
+  const fileName = videoData.name;
 
   const playlist: string[] = useMemo(() => {
     if (!playlistParam) return [];
@@ -74,28 +82,23 @@ export default function VideoPage() {
   };
 
   const breadcrumbItems = useVideoPageBreadcrumbs(path);
+  // const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt");
 
-  const [videoUrl, setVideoUrl] = useState("");
-  const [subtitleUrl, setSubtitleUrl] = useState("");
+  // useEffect(() => {
+  //   const fetchSecureUrls = async () => {
+  //     const token = await getToken();
+  //     if (token) {
+  //       const encodedPath = encodeURIComponent(path);
 
-  const fileName = decodeURIComponent(path.split("/").pop() || path);
-  const subtitlePath = path.replace(/\.[^/.]+$/, ".vtt");
+  //       setVideoUrl(
+  //         `${API_URL}/media_stream?path=${encodedPath}&token=${token}`
+  //       );
+  //       setSubtitleUrl(subtitlePath); // ✅ Pass just relative path like "Folder/video.vtt"
+  //     }
+  //   };
 
-  useEffect(() => {
-    const fetchSecureUrls = async () => {
-      const token = await getToken();
-      if (token) {
-        const encodedPath = encodeURIComponent(path);
-
-        setVideoUrl(
-          `${API_URL}/media_stream?path=${encodedPath}&token=${token}`
-        );
-        setSubtitleUrl(subtitlePath); // ✅ Pass just relative path like "Folder/video.vtt"
-      }
-    };
-
-    fetchSecureUrls();
-  }, [path, subtitlePath, getToken]);
+  //   fetchSecureUrls();
+  // }, [path, subtitlePath, getToken]);
 
   const handleDownload = async (event: React.MouseEvent) => {
     event.preventDefault();
@@ -111,25 +114,17 @@ export default function VideoPage() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    const token = await getToken();
     try {
-      const response = await fetch(
-        `${API_URL}/media_stream?path=${encodeURIComponent(path)}`,
-        {
-          signal: controller.signal,
-          headers: {
-            Accept: "application/octet-stream",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(videoData.url, {
+        signal: controller.signal,
+      });
 
       if (!response.ok)
         throw new Error(`HTTP error ! status = ${response.status}`);
       if (!response.body) throw new Error("Response body is NULL");
 
       const contentLength = response.headers.get("Content-Length");
-      const totalBytes = contentLength ? parseInt(contentLength, 10) : null;
+      const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
       let receivedBytes = 0;
 
       toast.custom(
@@ -156,7 +151,7 @@ export default function VideoPage() {
           chunks.push(value);
           receivedBytes += value.length;
 
-          if (totalBytes) {
+          if (totalBytes > 0) {
             const progress = Math.min((receivedBytes / totalBytes) * 100, 100);
             setDownloadProgress(progress);
             toast.custom(
@@ -178,12 +173,13 @@ export default function VideoPage() {
       const blob = new Blob(chunks);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      document.body.appendChild(a);
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      // document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      a.remove();
 
       toast.dismiss(toastId);
       toast.success(`Download complete: ${formatFileName(fileName)}`, {
@@ -192,16 +188,19 @@ export default function VideoPage() {
     } catch (error) {
       console.error("Error downloading file:", error);
       toast.dismiss(toastId);
-      toast.error(`Failed to download: ${formatFileName(fileName)}`, {
-        duration: 4000,
-      });
+      toast.error(`Failed to download: ${formatFileName(fileName)}`);
     } finally {
       setDownloadProgress(null);
+      toast.dismiss(toastId);
     }
   };
 
   if (!path) {
     return <div className="p-4 text-red-500">Invalid video path.</div>;
+  }
+  if (!videoData) {
+    // You might want a loading state or a redirect here if state is missing
+    return <div className="p-4">Loading video data... or video not found.</div>;
   }
 
   return (
@@ -217,8 +216,8 @@ export default function VideoPage() {
       </h3>
 
       <VideoPlayer
-        src={videoUrl}
-        subtitlePath={subtitleUrl}
+        videoSrc={videoData.url}
+        subtitleSrc={videoData.subtitle_url}
         onEnded={handleVideoEnded}
       />
 
@@ -255,7 +254,7 @@ export default function VideoPage() {
             <DownloadIcon className="w-5 h-5" />
             {downloadProgress === null
               ? "Download"
-              : `Downloading... ${downloadProgress.toFixed(0)}%`}
+              : `${downloadProgress.toFixed(0)}%`}
           </Button>
         </div>
         <div className="flex items-center gap-2">

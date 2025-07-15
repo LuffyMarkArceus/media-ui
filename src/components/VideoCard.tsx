@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 
 import { useAxiosAuth } from "../hooks/useAxiosAuth";
@@ -23,13 +23,15 @@ import { Input } from "../components/ui/input";
 import { MoreVertical } from "lucide-react";
 import { formatFileSize, formatFileName } from "../lib/utils";
 
-import { useAuth } from "@clerk/clerk-react";
+// import { useAuth } from "@clerk/clerk-react";
 
 export interface VideoMeta {
   name: string;
   size: number;
   path: string;
   type: string;
+  thumbnail_url: string;
+  subtitle_url: string;
 }
 
 interface VideoCardProps {
@@ -38,11 +40,11 @@ interface VideoCardProps {
   isAdmin: boolean;
 }
 
-const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
+// const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
 
 export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
-  const { getToken } = useAuth();
-  const [token, setToken] = useState<string | null>(null);
+  // const { getToken } = useAuth();
+  // const [token, setToken] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const [newName, setNewName] = useState("");
@@ -52,12 +54,12 @@ export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
   const axiosAuth = useAxiosAuth();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const jwt = await getToken();
-      setToken(jwt);
-    })();
-  }, [getToken]);
+  // useEffect(() => {
+  //   (async () => {
+  //     const jwt = await getToken();
+  //     setToken(jwt);
+  //   })();
+  // }, [getToken]);
 
   const openRenameDialog = () => {
     setNewName(video.name.replace(/\.[^/.]+$/, ""));
@@ -65,7 +67,14 @@ export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
   };
 
   const handleCardClick = () => {
-    navigate(`/video?path=${encodeURIComponent(video.path)}`);
+    // We navigate to the video page, passing the video data in the state
+    const videoPaths = [video.path]; // Simplified for single click context
+    const playlistParam = encodeURIComponent(JSON.stringify(videoPaths));
+
+    navigate(
+      `/video?path=${encodeURIComponent(video.path)}&playlist=${playlistParam}`,
+      { state: { videoData: video } }
+    );
   };
 
   const handleDownload = async (event: React.MouseEvent) => {
@@ -163,13 +172,7 @@ export function VideoCard({ video, refreshFiles, isAdmin }: VideoCardProps) {
         onClick={handleCardClick}
       >
         <img
-          src={
-            token
-              ? `${API_BASE}/proxy_thumbnail/${encodeURIComponent(
-                  video.path.replace(/\.[^/.]+$/, ".jpg")
-                )}?token=${token}`
-              : undefined
-          }
+          src={video.thumbnail_url}
           alt={video.name}
           className="w-full h-32 object-cover"
         />

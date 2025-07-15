@@ -21,6 +21,8 @@ interface FileItem {
   path: string;
   type: string;
   created_at: string;
+  thumbnail_url: string;
+  subtitle_url: string;
 }
 
 type SortKey = "name" | "size" | "created_at";
@@ -144,11 +146,12 @@ export default function Home() {
     navigate(`/?path=${encodeURIComponent(newPath)}`);
   };
 
-  const openVideo = (videoPath: string) => {
+  const openVideo = (video: FileItem) => {
     const videoPaths = sortedVideos.map((v) => v.path);
     const playlistParam = encodeURIComponent(JSON.stringify(videoPaths));
     navigate(
-      `/video?path=${encodeURIComponent(videoPath)}&playlist=${playlistParam}`
+      `/video?path=${encodeURIComponent(video.path)}&playlist=${playlistParam}`,
+      { state: { videoData: video } }
     );
   };
 
@@ -226,7 +229,7 @@ export default function Home() {
           <h2 className="text-lg font-semibold mb-2">Videos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedVideos.map((video) => (
-              <div key={video.path} onClick={() => openVideo(video.path)}>
+              <div key={video.path} onClick={() => openVideo(video)}>
                 <VideoCard
                   video={video}
                   refreshFiles={refreshFiles}
